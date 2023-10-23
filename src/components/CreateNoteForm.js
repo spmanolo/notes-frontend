@@ -1,10 +1,11 @@
-export default function CreateNoteForm({ newNote, onNewNoteChange, handleSubmit }) {
+export default function CreateNoteForm({ newNote, onNewNoteChange, handleSubmit, handleLogout }) {
   return (
     <form onSubmit={handleSubmit}>
       <input
         type='text'
         placeholder='Write a new note'
-        onChange={({ target }) => onNewNoteChange(target.value)} value={newNote}
+        onChange={({ target }) => onNewNoteChange(target.value)}
+        value={newNote}
       />
       <button>Crear nota</button>
     </form>
