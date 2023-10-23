@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Note from './components/Note'
 import CreateNoteForm from './components/CreateNoteForm'
 import LoginForm from './components/LoginForm'
-import Notification from './components/notification'
+import Notification from './components/Notification'
 
 import noteService from './services/notes'
 import loginService from './services/login'
@@ -27,6 +27,70 @@ export default function App() {
     })
   }, [])
 
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem('loggedNoteAppUser')
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON)
+      setUser(user)
+      noteService.setToken(user.token)
+    }
+  }, [])
+
+  function handleLogout() {
+    setUser(null)
+    noteService.setToken(user.token)
+    window.localStorage.removeItem('loggedNoteAppUser')
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault()
+    console.log('loggin in with', username, password)
+
+    try {
+      const user = await loginService.login({
+        username, password
+      })
+
+      window.localStorage.setItem(
+        'loggedNoteAppUser', JSON.stringify(user)
+      )
+
+      noteService.setToken(user.token)
+      setUser(user)
+      setUsername('')
+      setPassword('')
+      console.log('loggued in with', username, password)
+    } catch (exception) {
+      setError(true)
+      setNotMessage('Wrong credentials')
+      setTimeout(() => {
+        setError(false)
+        setNotMessage(null)
+      }, 5000)
+    }
+  }
+
+  function addNote(event) {
+    event.preventDefault()
+
+    const noteToAddToState = {
+      content: newNote
+    }
+
+    noteService
+      .create(noteToAddToState)
+      .then(newNote => {
+        setNotes(prevNotes => prevNotes.concat(newNote))
+        setError(false)
+        setNotMessage(`Note '${newNote.content}' has added to NOTES`)
+        setTimeout(() => {
+          setNotMessage(null)
+        }, 5000)
+      })
+
+    setNewNote('')
+  }
+
   function toggleImportanceOf(id) {
     const note = notes.find(n => n.id === id)
     const changedNote = { ...note, important: !note.important }
@@ -46,47 +110,16 @@ export default function App() {
     setNotes(notes.filter(n => n.id !== id))
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
-
-    const noteToAddToState = {
-      content: newNote
-    }
-
-    noteService.create(noteToAddToState)
-      .then(newNote => {
-        setNotes(prevNotes => prevNotes.concat(newNote))
-        setError(false)
-        setNotMessage(`Note '${newNote.content}' has added to NOTES`)
-        setTimeout(() => {
-          setNotMessage(null)
-        }, 5000)
-      })
-
-    setNewNote('') // refrescar el searchbar
-  }
-
-  async function handleLogin(event) {
-    event.preventDefault()
-    console.log('loggin in with', username, password)
-
-    try {
-      const user = await loginService.login({
-        username, password
-      })
-      console.log(user)
-      setUser(user)
-      setUsername('')
-      setPassword('')
-      console.log('loggued in with', username, password)
-    } catch (exception) {
-      setError(true)
-      setNotMessage('Wrong credentials')
-      setTimeout(() => {
-        setError(false)
-        setNotMessage(null)
-      }, 5000)
-    }
+  function UserIsLogged() {
+    return (
+      <div>
+        <p>{user.name} logged-in</p>
+        <CreateNoteForm newNote={newNote} onNewNoteChange={setNewNote} handleSubmit={addNote} handleLogout={handleLogout} />
+        <button onClick={handleLogout}>
+          Cerrar Sesión
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -98,7 +131,7 @@ export default function App() {
       {loading ? 'Cargando notas...' : ''}
 
       {user
-        ? <CreateNoteForm newNote={newNote} onNewNoteChange={setNewNote} handleSubmit={handleSubmit} />
+        ? <UserIsLogged />
         : <LoginForm handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />}
 
       <ol>
