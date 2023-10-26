@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 
 import Note from './components/Note'
-import CreateNoteForm from './components/CreateNoteForm'
+import NoteForm from './components/NoteForm'
 import LoginForm from './components/LoginForm'
 import Notification from './components/Notification'
+import InfoLogin from './components/InfoLogin'
 
 import noteService from './services/notes'
 import loginService from './services/login'
 
 export default function App() {
   const [notes, setNotes] = useState([])
-  const [newNote, setNewNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [notMessage, setNotMessage] = useState(null)
   const [error, setError] = useState(false)
@@ -35,12 +35,6 @@ export default function App() {
       noteService.setToken(user.token)
     }
   }, [])
-
-  function handleLogout() {
-    setUser(null)
-    noteService.setToken(user.token)
-    window.localStorage.removeItem('loggedNoteAppUser')
-  }
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -70,15 +64,15 @@ export default function App() {
     }
   }
 
-  function addNote(event) {
-    event.preventDefault()
+  function handleLogout() {
+    setUser(null)
+    noteService.setToken(user.token)
+    window.localStorage.removeItem('loggedNoteAppUser')
+  }
 
-    const noteToAddToState = {
-      content: newNote
-    }
-
+  function addNote(note) {
     noteService
-      .create(noteToAddToState)
+      .create(note)
       .then(newNote => {
         setNotes(prevNotes => prevNotes.concat(newNote))
         setError(false)
@@ -87,8 +81,6 @@ export default function App() {
           setNotMessage(null)
         }, 5000)
       })
-
-    setNewNote('')
   }
 
   function toggleImportanceOf(id) {
@@ -113,11 +105,13 @@ export default function App() {
   function UserIsLogged() {
     return (
       <div>
-        <p>{user.name} logged-in</p>
-        <CreateNoteForm newNote={newNote} onNewNoteChange={setNewNote} handleSubmit={addNote} handleLogout={handleLogout} />
-        <button onClick={handleLogout}>
-          Cerrar Sesión
-        </button>
+        <InfoLogin
+          username={user.name}
+          handleLogout={handleLogout}
+        />
+        <NoteForm
+          createNote={addNote}
+        />
       </div>
     )
   }
@@ -132,7 +126,13 @@ export default function App() {
 
       {user
         ? <UserIsLogged />
-        : <LoginForm handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />}
+        : <LoginForm
+          handleLogin={handleLogin}
+          username={username}
+          setUsername={setUsername}
+          password={password}
+          setPassword={setPassword}
+        />}
 
       <ol>
         {notes
